@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 base_url = "https://books.toscrape.com/"
-categorical_url = urljoin("base_url", "catalogue/")
+categorical_url = urljoin(base_url, "catalogue/")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -18,11 +18,11 @@ HEADERS = {
 }
 
 RATING_MAP = {
-    "One": "One",
-    "Two": "Two",
-    "Three": "Three",
-    "Four": "Four",
-    "Five": "Five"
+    "One": "1",
+    "Two": "2",
+    "Three": "3",
+    "Four": "4",
+    "Five": "5"
 }
 
 def get_soup(url):
@@ -326,9 +326,6 @@ df.head(10)
 
 #covert to DataFrame
 df =pd.DataFrame(all_books)
-
-# Convert to DataFrame
-df = pd.DataFrame(all_books)
 
 # Save dataset
 df.to_csv(
