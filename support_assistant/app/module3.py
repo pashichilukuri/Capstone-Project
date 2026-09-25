@@ -108,8 +108,8 @@ def cosine_similarity(vec1, vec2):
 
 #clasify the state with intent
 
-# MOCK_LLM unset or "1" = mock mode
-# MOCK_LLM="0" = real LLM mode
+# mock_LLM unset or "1" = mock mode
+# mock_LLM="0" = real LLM mode
 
 mock_LLM = os.getenv("mock_LLM", "1")
 
