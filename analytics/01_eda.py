@@ -509,7 +509,10 @@ pre_preprocessor = ColumnTransformer([
     ('categorical', categorical_pipeline, categorical_columns),
     ('numeric', numeric_pipeline, numeric_features)
 ])
-
+linear_model = Pipeline([
+       ('preprocessor', preprocessor_reg),
+       ('regressor', LinearRegression())
+   ])
 model_pipeline = Pipeline([
     ('preprocessor', pre_preprocessor),
     ('classifier', LogisticRegression(max_iter=1000))
