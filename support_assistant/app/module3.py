@@ -1,6 +1,6 @@
 #install dependecies
-pip3 install langgraph openai chromadb
-pip3 install -U --force-reinstall chromadb opentelemetry-api opentelemetry-sdk
+#pip3 install langgraph openai chromadb
+#pip3 install -U --force-reinstall chromadb opentelemetry-api opentelemetry-sdk
 
 #import dependecies
 import os
@@ -99,8 +99,8 @@ def cosine_similarity(vec1, vec2):
   '''calculatecosine similarity between 2 vectors '''
 
   dot = sum(a * b for a,b in zip (vec1,vec2))
-  magnitude1 = math.sqrt ( a * a for a in vec1)
-  magnitude2 = math.sqrt (b * b for b in vec2)
+  magnitude1 = math.sqrt (sum( a * a for a in vec1))
+  magnitude2 = math.sqrt (sum( b * b for b in vec2))
 
   if magnitude1 ==0 or magnitude2==0:
     return 0.0
@@ -130,9 +130,29 @@ class RouterState(TypedDict):
   final_answer: dict
   
  #Node1 clasify the intent
-def clasify_intent(state,RouterState):
+def clasify_intent(state: RouterState):
   '''clasify the incoming_query in to policy_question or Genearl_question'''
   query = state["query"]
+
+  if mock_LLM != "0":
+    keywords = ["delivery", "return", "refund", "membership", "tracking", "cancel", "gift card", "support hours"]
+    intent = "policy_question" if any(k in query.lower() for k in keywords) else "general_question"
+  else:
+    response = call_llm().chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[
+            {"role": "system", "content": "classify the question exactly into one category: policy_question or general_question. reply with only one category"},
+            {"role": "user", "content": query}
+        ],
+        temperature=0.2
+    )
+    intent = response.choices[0].message.content.strip()
+
+  if intent not in ["policy_question", "general_question"]:
+    intent = "general_question"
+
+  return {"intent": intent}
+
 
   if state["intent"] == "general_question":
         result = FinalAnswer(
@@ -191,12 +211,12 @@ def clasify_intent(state,RouterState):
 
 #Node2 retrieve_and_answer
 
-def retrieve_and_answer (state,RouterState):
+def retrieve_and_answer (state: RouterState):
   '''embeds the query and retrieves the top-3 most similar chunks from ChromaDB via cosine similarity'''
   query = state["query"]
 
 # STEP 1: EMBED QUERY
-  query_embedding = embed_query(query)
+  results = collection.query(query_texts=[query], n_results=3)
 
   results = collection.get(
     include=[
@@ -210,17 +230,17 @@ def retrieve_and_answer (state,RouterState):
 #CALCULATE COSINE SIMILARITY
   chunks = []
 
-  for chunk_id,documents, embeddings in zip(
+  for chunk_id, doc_text, doc_emb in zip(
       ids,
       documents,
       embeddings
       ):
-    similarity = cosine_similarity(embeddings,query_embeeding)
+    similarity = cosine_similarity(doc_emb,query_embedding)
 
     chunks.append(
         (similarity,
         chunk_id,
-        documents
+        doc_text
          )
        )
  #SORT BY SIMILARITY
@@ -239,7 +259,7 @@ def retrieve_and_answer (state,RouterState):
       in top_chunks
    ]
 #mock mode
-  if mock_LLM !=0:
+  if mock_LLM != "0":
     if top_chunks:
       top_chunk_snippet = top_chunks[0][2][:200]
       
@@ -268,8 +288,8 @@ def retrieve_and_answer (state,RouterState):
 
   else:
     context = "\n\n".join(
-        documents
-        for similarity, chunk_id, document
+        doc_text
+        for similarity, chunk_id, doc_text
         in top_chunks
         )
 
@@ -278,10 +298,7 @@ def retrieve_and_answer (state,RouterState):
         context= context,
         source_ids = source_ids
     )
-  return {
-      "retrieved_chunks": top_chunks,
-      "answer": final_answer.model_dump()
-      }
+  return {"retrieved_chunks": top_chunks, "final_answer": result.model_dump()}
 # REAL LLM + PYDANTIC VALIDATION
 def generate_validated_llm_answer(
   query : str,
@@ -289,7 +306,7 @@ def generate_validated_llm_answer(
   source_ids : list[str]
   ):
 
-  llm_client = get_llm_client()
+  llm_client = call_llm()
   prompt = f"""
 ROLE:
 "You are a helpful and accurate question-answering assistant."
@@ -342,7 +359,7 @@ USER QUESTION:
 {query}
 """
 
-for attempt in range(3):
+  for attempt in range(3):
 
     llm_client = call_llm()
 
@@ -397,39 +414,29 @@ Do not include Markdown or any text outside the JSON.
 
 #node 3 direct_answer
 
-def direct_answer(state,RouterState):
-   '''answer general questions without retrieve'''
+def direct_answer(state: RouterState):
    query = state["query"]
 
-# mock mode
-
    if mock_LLM != "0":
-    answer = ("I can only answer questions about Zepto policies right now.")
-
+       answer_text = "I can only answer questions about Zepto policies right now."
    else:
-    llm_client = call_llm()
+       response = call_llm().chat.completions.create(
+           model="openai/gpt-oss-20b",
+           messages=[
+               {"role": "system", "content": "You are a helpful assistant. Answer directly and concisely."},
+               {"role": "user", "content": query}
+           ],
+           temperature=0.2
+       )
+       answer_text = response.choices[0].message.content.strip()
 
-    response = llm_client.chat.completions.create(
-        model = "openai/gpt-oss-20b",
-        messages = [
-            { "role":"system",
-            "context":("you are an helpful assistant answer the question directly and concisely")
-            },
-            {"role":"user", "context": query}
-        ],
-        temparature = 0.2
-    )
-    answer = response.choices[0].message.content.strip()
-   return {"answer" : answer}
+   result = FinalAnswer(answer=answer_text, sources=[], confidence=1.0)
+   return {"final_answer": result.model_dump()}
 #create the router intent
-
-def router_intent(state,RouterState):
-  '''decide which node to exicute '''
-
+def router_intent(state: RouterState):
   if state["intent"] == "policy_question":
-    return retrieve_and_answer
-  return direct_answer
-
+    return "retrieve_and_answer"
+  return "direct_answer"
 
 #adding nodes using langraph
 from langgraph.graph import StateGraph, START ,END
@@ -460,21 +467,15 @@ router_graph.add_edge("direct_answer", END)
 
 zepto_app = router_graph.compile()
 
-
-
-display(Image(zepto_app.get_graph().draw_mermaid_png()))
-
-results = zepto_app.invoke({"query" :"what are the list of  Membership Tiers"})
-
-
+if __name__ == "__main__":
+    display(Image(zepto_app.get_graph().draw_mermaid_png()))
+    results = zepto_app.invoke({"query": "what are the list of Membership Tiers"})
+    print(results)
 
 # Request schema
 
-def ask_Request(BaseModel):
-  query = str
-{
-    "query": "What is the cancelled Orders policy ?"
-}
+class ask_Request(BaseModel):
+  query: str
 
 # FastAPI application
 app = FastAPI(
@@ -493,8 +494,5 @@ def ask(request: ask_Request):
         "query": request.query
     }
 
-    result = router_graph.invoke(state)
-
-    return FinalAnswer.model_validate(
-        result["final_answer"]
-    )
+    result = zepto_app.invoke(state)
+    return FinalAnswer.model_validate(result["final_answer"])

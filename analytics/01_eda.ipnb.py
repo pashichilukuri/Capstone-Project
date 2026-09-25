@@ -1,9 +1,34 @@
-'''Load the dataset and profile it'''
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import warnings
+
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+
+# Classification Models & Trees
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier, plot_tree, export_text
+
+# Regression Models
+from sklearn.linear_model import LinearRegression
+
+# Class Imbalance Utilities
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as ImbPipeline
+from sklearn.pipeline import Pipeline
+
+# Evaluation Metrics
+from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_score,
+                             classification_report, confusion_matrix, roc_auc_score,
+                             roc_curve, ConfusionMatrixDisplay, 
+                             mean_absolute_error, mean_squared_error, r2_score)
+
+
 df= sns.load_dataset('titanic')
 df
 
@@ -139,9 +164,7 @@ plt.savefig("correlation_heatmap.png", dpi=150)
 plt.tight_layout()
 plt.show()
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 # Columns used in the analysis
 cols = ['survived', 'pclass', 'age', 'sibsp', 'parch', 'fare']
@@ -159,12 +182,6 @@ plt.ylabel('Survival Rate')
 plt.ylim(0, 1)
 plt.show()
 
-
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-import warnings
 
 df= sns.load_dataset('titanic')
 df
@@ -348,10 +365,6 @@ plt.show()
 
 #produce at least 4 distinct charts (any combination of bar/box/scatter/heatmap/pair-plot) that together build a coherent argument about who was more likely to survive and why
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 # Columns used in the analysis
 cols = ['survived', 'pclass', 'age', 'sibsp', 'parch', 'fare']
 
@@ -424,8 +437,7 @@ plt.show()
 #Interpretation: The scatter plot combines age and fare while distinguishing passengers by survival and sex. Higher fares are associated with passengers in higher passenger classes having the more survival chances. The plot therefore provides a multivariate view showing that survival was not simply an age-related outcome but occurred within a broader combination of sex and fare
 
 #standardize age and fare using the z-score formula z = (x − mean) / std on the full cleaned DataFrame
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+
 #column to standardize age and columns
 numeric_colums =["age", "fare"]
 
@@ -464,13 +476,6 @@ print((comparison * 100).round(2))
 df.shape
 #encode categorical columns (sex, embarked) with label or one-hot encoding, and scale numeric features with StandardScaler,
 #Every preprocessing step (imputer, encoder, scaler) must be fit only on the training split, then applied in transform-only mode to the test split.
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.linear_model import LogisticRegression
 
 # split the columns in to categorical columns and numeric_features
 categorical_columns = ["sex","embarked"]
@@ -519,13 +524,6 @@ y_proba= model_pipeline.predict_proba(X_test)[:,1]
 
 #Train three classifiers on the same train/test split: 
 #Logistic Regression, Decision Tree, and Random Forest.
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_score,
-                             classification_report, confusion_matrix, roc_auc_score,
-                             roc_curve, ConfusionMatrixDisplay)
 Logistic_pipeline = Pipeline([
     ('preprocessor', pre_preprocessor),
     ('classifier', LogisticRegression(max_iter=1000,random_state=42))
@@ -533,7 +531,7 @@ Logistic_pipeline = Pipeline([
 
 Random_forest_pipeline= Pipeline([
     ('preprocessor', pre_preprocessor),
-    ('classifier', RandomForestClassifier(max_depth=4,n_estimators =200 random_state=42))
+    ('classifier', RandomForestClassifier(max_depth=4,n_estimators =200,random_state=42))
 ])
 
 DecisionTreeClassifier_pipeline= Pipeline([
@@ -547,7 +545,7 @@ Logistic_pipeline.fit(X_train,y_train)
 Random_forest_pipeline.fit(X_train,y_train)
 DecisionTreeClassifier_pipeline.fit(X_train,y_train)
 
-from sklearn.tree import DecisionTreeClassifier, plot_tree, export_text
+
 
 # Extract fitted components
 fitted_preprocessor = DecisionTreeClassifier_pipeline.named_steps['preprocessor']
@@ -693,10 +691,7 @@ comparison[
 
 display(comparison)
 
-#Imbalance handling comparison:
-from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline as ImbPipeline
-import pandas as pd
+
 #Report survived/not-survived class balance,
 # Class counts
 class_counts = y.value_counts().sort_index()
@@ -804,10 +799,6 @@ All three models have the same rounded F1 = 0.73; therefore F1 alone does not di
 #Hyperparameter tuning: 
 
 # Random Forest with OOB scoring enabled
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
-
 rf_oob= RandomForestClassifier(
     oob_score=True,
     random_state=42,
@@ -838,16 +829,6 @@ grid_search = GridSearchCV(
 
 #Regression side-task:
 #using the same dataset,predict fare from the other available features with a multivariate linear regression
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import (mean_absolute_error,mean_squared_error,r2_score)
-
 
 categorical_columns_reg = ["sex","embarked"]
 numerical_features_reg= ["survived","age","pclass","sibsp","parch"]
@@ -895,7 +876,7 @@ print(f"Adjusted_R2 : {Adjusted_R2:.3f}")
 #produce a residual plot, stating in writing whether it shows heteroscedasticity
 #Residual=Actual Fare−Predicted Fare
 residual = y_test_rg-y_test_pred_rg
-import matplotlib.pyplot as plt
+
 plt.figure(figsize=(8, 6))
 
 sns.scatterplot(
