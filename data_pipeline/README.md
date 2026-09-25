@@ -74,28 +74,9 @@ Run the script/notebook top to bottom; it will create `books_to_scrape_dataset.c
 
 The pasted code has a few problems that will cause it to fail or behave incorrectly as-is:
 
-1. **`urljoin` is called on a string literal, not the `base_url` variable** (quotes around `base_url`), so `categorical_url` is wrong and unused anyway:
-   ```python
-   categorical_url = urljoin("base_url", "catalogue/")   # "base_url" is a literal string, not the variable
-   ```
-   This line isn't actually needed by the rest of the script and can be removed, or fixed to `urljoin(base_url, "catalogue/")`.
+1. **Column reordering happens before the DataFrame is (re)built** in the current line order — once #2 is fixed, make sure the "Arrange the final columns" step runs *after* all the derived columns (`price_gbp`, `price_inr`, `rating`, `in_stock`) have been created, which it already does structurally, it just needs `df` to exist from the start.
 
-2. **`df` is used before it's created.** The block that prints `df.head(10)`, `df.shape`, `df["category"].value_counts()`, etc. runs *before* `df = pd.DataFrame(all_books)` is defined later in the script. Move the line
-   ```python
-   df = pd.DataFrame(all_books)
-   ```
-   to **immediately after** the scraping loop finishes (right after `print(f"Total books scraped: {len(all_books)}")`), before any `df.*` calls.
-
-3. **`df = pd.DataFrame(all_books)` appears twice** near the CSV-export step — the duplicate can be removed once the DataFrame is created earlier (see #2).
-
-4. **Column reordering happens before the DataFrame is (re)built** in the current line order — once #2 is fixed, make sure the "Arrange the final columns" step runs *after* all the derived columns (`price_gbp`, `price_inr`, `rating`, `in_stock`) have been created, which it already does structurally, it just needs `df` to exist from the start.
-
-5. **`RATING_MAP`** is currently a same-to-same mapping (`"One": "One"`, etc.) — the `rating` column produced by `df["star_rating"].map(RATING_MAP)` will just duplicate `star_rating` as text, not convert it to a number. If you want `rating` to be numeric (as the SQLite schema's `INTEGER` column implies), change it to:
-   ```python
-   RATING_MAP = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
-   ```
-
-6. **Scraping performance/etiquette**: the script fetches a detail page for *every single book* to get its category, with no delay between requests (`time` is imported but never used). Consider adding `time.sleep(...)` between requests to be polite to the server, especially if you scale beyond 5 pages.
+2. **Scraping performance/etiquette**: the script fetches a detail page for *every single book* to get its category, with no delay between requests (`time` is imported but never used). Consider adding `time.sleep(...)` between requests to be polite to the server, especially if you scale beyond 5 pages.
 
 ## Key Outputs
 
