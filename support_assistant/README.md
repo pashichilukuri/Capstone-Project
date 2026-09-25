@@ -415,42 +415,6 @@ def ask(request: AskRequest):
 
 ## Known code cleanup before running
 
-The notebook/code version used during development contains some notebook-specific and draft-code artifacts. Before running it as a standalone FastAPI/Docker application, remove or correct items such as:
-
-- `!pip install ...` notebook commands.
-- `IPython.display.Image` / `display(...)` graph visualization if not needed by the API.
-- Duplicate imports.
-- Inconsistent `mock_LLM` vs `MOCK_LLM` naming.
-- Any hardcoded API key.
-- Undefined helper functions such as `embed_query()` unless they are defined elsewhere.
-- Incorrect `math.sqrt(generator)` expressions in the cosine-similarity implementation.
-- Any use of `final_answer` when the actual variable is named `result`.
-- Any direct-answer node that returns only a string instead of the required `FinalAnswer` structure.
-
-## Security
-
-Never commit:
-
-```text
-.env
-.env.*
-```
-
-or API keys.
-
-Recommended `.gitignore` / `.dockerignore` entries include:
-
-```text
-.env
-.env.*
-__pycache__/
-*.pyc
-.venv/
-venv/
-.git/
-*.log
-```
-
 ## Optional Hugging Face Spaces deployment
 
 Hugging Face Spaces deployment is optional and is not required for the graded Docker baseline.
