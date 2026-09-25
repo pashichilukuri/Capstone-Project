@@ -87,44 +87,7 @@ pip install -r requirements.txt
 
 ## Notes / Known Issues to Fix Before Running
 
-A few lines in the pasted code will raise errors as-is and should be corrected:
-
-1. **Syntax error** — missing comma in Random Forest constructor:
-   ```python
-   RandomForestClassifier(max_depth=4, n_estimators=200 random_state=42)
-   ```
-   should be:
-   ```python
-   RandomForestClassifier(max_depth=4, n_estimators=200, random_state=42)
-   ```
-
-2. **Wrong variable in F1 score** for Decision Tree and Random Forest — uses `y_pred` (undefined at that point) instead of `y_pred_DT` / `y_pred_RF`:
-   ```python
-   F1_DT = f1_score(y_test, y_pred)   # should be y_pred_DT
-   F1_RF = f1_score(y_test, y_pred)   # should be y_pred_RF
-   ```
-
-3. **`linear_model` is used but never defined** before `linear_model.fit(...)`. It needs to be built as a pipeline, e.g.:
-   ```python
-   preprocessor_reg = ColumnTransformer([
-       ('categorical', categorical_pipeline, categorical_columns_reg),
-       ('numeric', numeric_pipeline, numerical_features_reg)
-   ])
-   linear_model = Pipeline([
-       ('preprocessor', preprocessor_reg),
-       ('regressor', LinearRegression())
-   ])
-   ```
-
-4. **`param_grid` has a string `"0.5"` instead of a float** in `max_features`:
-   ```python
-   "max_features": ["sqrt", "log2", "0.5"]   # should be 0.5 (float), not a string
-   ```
-
-5. **`GridSearchCV` object (`grid_search`) is defined but `.fit()` is never called** on it — add `grid_search.fit(X_train, y_train)` if you want the tuned model.
-
-6. `display()` is a Jupyter-only function — if running as a plain `.py` script, replace with `print()`.
-
+1. **`GridSearchCV` object (`grid_search`) is defined but `.fit()` is never called** on it — add `grid_search.fit(X_train, y_train)` if you want the tuned model.
 ## Key Findings
 
 - **Sex** is the strongest single predictor of survival (women survived at a much higher rate than men).
