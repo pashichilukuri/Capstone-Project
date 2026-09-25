@@ -818,7 +818,7 @@ rf_grid_pipeline=Pipeline([
 param_grid={
     "n_estimators":[100,200,500],
     "max_depth": [None,5,10,20],
-    "max_features":["sqrt","log2","0.5"]
+    "max_features":["sqrt","log2",0.5]
 }
 #GridSearchCV
 grid_search = GridSearchCV(
@@ -829,7 +829,6 @@ grid_search = GridSearchCV(
     n_jobs=-1,
     refit=True
  )
-
 #Regression side-task:
 #using the same dataset,predict fare from the other available features with a multivariate linear regression
 
@@ -950,7 +949,7 @@ model_comparison = pd.DataFrame({
 # Round the numerical columns
 model_comparison.iloc[:, 1:] = model_comparison.iloc[:, 1:].round(3)
 
-display(model_comparison)
+print(model_comparison)
 
 
 
